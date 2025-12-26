@@ -3,7 +3,7 @@
 # and underscores. A good package name should reflect your organization's
 # name or the intended use of these models
 name: 'BTC'
-version: '1.0.0'
+version: '1.9.0'
 
 # This setting configures which "profile" dbt uses for this project.
 profile: 'BTC'
@@ -31,6 +31,5 @@ clean-targets:         # directories to be removed by `dbt clean`
 # files using the `{{ config(...) }}` macro.
 models:
   BTC:
-    # Config indicated by + and applies to all files under models/example/
-    example:
+    # Config indicated by + and applies to all files under models
       +materialized: view
