@@ -7,3 +7,57 @@ models:
         tests:
           - not_null
           - unique
+
+  - name: stg_btc_outputs
+    tests:
+      - dbt_utils.equal_rowcount:
+          compare_model: ref('stg_btc_outputs_py')
+
+  - name: whale_alerts
+    latest_version: 2
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: output_address
+        data_type: string
+        data_tests:
+          - assert_valid_btc_address
+      - name: total_sent
+        data_type: float
+      - name: number_of_transactions
+        data_type: integer
+      - name: total_sent_usd
+        data_type: float
+
+    versions:
+    
+      - v: 1
+        deprecation_date: 2026-02-02
+        config:
+          enabled: true
+        # Matches what's above -- nothing more needed
+    
+      - v: 2
+        # Removed a column -- this is the breaking change!
+        columns:
+          # This means: use the 'columns' list from above, but exclude country_name
+          - include: all
+            exclude: [total_sent_usd]
+
+exposures:
+
+  - name: btc_whale_alerts_exposure
+    label: $ BTC Whale Alerts
+    type: dashboard
+    maturity: high
+    url: https://lookerstudio.google.com/reporting/f68429a2-51e7-41d1-a240-25e8fff1724b
+    description: >
+      Bitcoin whale alerts
+
+    depends_on:
+      - ref('whale_alerts', v=2)
+
+
+    owner:
+      name: Sagar Marthandan
