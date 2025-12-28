@@ -26,6 +26,7 @@ with flattened_outputs as (
 )
 
 select
+    '{{ invocation_id }}' as invocation_id,
     HASH_KEY,
     BLOCK_NUMBER,
     BLOCK_TIMESTAMP,

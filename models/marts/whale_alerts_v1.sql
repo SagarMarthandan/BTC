@@ -16,6 +16,7 @@ with WHALES as (
 )
 
 select
+    '{{ invocation_id }}' as invocation_id, 
     w.output_address,
     w.total_sent,
     w.number_of_transactions,

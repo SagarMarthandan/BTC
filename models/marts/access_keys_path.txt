@@ -1,0 +1,5 @@
+For git actions :
+    "/home/runner/.dbt/rsa_key"
+
+For native VS code use:
+    "C:/Users/sagar/rsa_key.p8"

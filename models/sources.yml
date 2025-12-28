@@ -10,3 +10,9 @@ sources:
           warn_after: {count: 1, period: hour}
           error_after: {count: 3, period: hour}
         loaded_at_field: BLOCK_TIMESTAMP
+
+  - name: CUSTOMERS
+    database: CUSTOMERS
+    schema: CUSTOMERS
+    tables:
+      - name: CUSTOMER_STATUS
