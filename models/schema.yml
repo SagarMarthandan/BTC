@@ -52,7 +52,7 @@ exposures:
     type: dashboard
     maturity: high
     url: https://lookerstudio.google.com/reporting/f68429a2-51e7-41d1-a240-25e8fff1724b
-    description: >
+    description: 
       Bitcoin whale alerts
 
     depends_on:
