@@ -1,0 +1,8 @@
+snapshots:
+  - name: customer_snapshot
+    relation: source('CUSTOMERS', 'CUSTOMER_STATUS')
+    config:
+      unique_key: CUSTOMER_ID
+      strategy: timestamp
+      updated_at: LAST_UPDATED
+      hard_deletes: 'new_record'

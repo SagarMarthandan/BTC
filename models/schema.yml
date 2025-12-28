@@ -19,6 +19,8 @@ models:
       contract:
         enforced: true
     columns:
+      - name: invocation_id
+        data_type: string
       - name: output_address
         data_type: string
         data_tests:
