@@ -4,7 +4,7 @@ This project is designed to process Bitcoin transaction data within a Snowflake 
 
 ---
 
-## 1. Project Configuration
+## 1. Project Configuration & Security
 
 ### `dbt_project.yml`
 The core configuration file for the dbt project.
@@ -13,9 +13,30 @@ The core configuration file for the dbt project.
 *   **Model Paths:** Defines where dbt looks for models, seeds, macros, and tests.
 *   **Marts Configuration:** Specifically configures models in the `marts` folder to materialize as tables and includes post-hooks for table commenting and versioned view creation.
 
+### Access Keys & `profiles.yml`
+*   **Why separate keys?** Git is a version control system for code, not a secret manager. Committing database passwords or private keys to Git is a major security risk.
+*   **How it works:** dbt uses a file called `profiles.yml` (typically stored in your local `~/.dbt/` directory, outside the project folder) to manage connection details (account, user, password, warehouse).
+*   **Local vs. Git:** The `dbt_project.yml` references a profile name (e.g., `BTC`). When you run dbt locally, it looks up `BTC` in your local `profiles.yml`. In production (like GitHub Actions), secrets are injected via environment variables into a generated `profiles.yml`.
+
 ---
 
-## 2. Models (`/models`)
+## 2. Data Sources & Schema Definition
+
+### `models/sources.yml`
+*   **Purpose:** Defines the raw data loaded into Snowflake (e.g., `btc.btc_schema.btc`).
+*   **Function:** Maps raw database tables to dbt "sources". This allows you to refer to them dynamically using `{{ source('btc', 'btc') }}` in your SQL, enabling lineage tracking and freshness checks.
+
+### `models/schema.yml`
+*   **Purpose:** The "contract" and documentation registry for your models.
+*   **Key Components:**
+    *   **Model Properties:** Defines descriptions and data types for columns.
+    *   **Tests:** Applies constraints like `unique` and `not_null` to ensure data integrity.
+    *   **Versioning:** Defines model versions (e.g., `whale_alerts` v1 vs v2), allowing you to introduce breaking changes (like removing a column) without immediately breaking downstream consumers.
+    *   **Exposures:** Documents downstream dependencies (e.g., the "BTC Whale Alerts" Looker Studio dashboard), so you know what breaks if a model changes.
+
+---
+
+## 3. Models (`/models`)
 
 The models are organized into layers following dbt best practices: Staging and Marts.
 
@@ -51,7 +72,19 @@ The analytical layer where business logic is applied.
 
 ---
 
-## 3. Seeds (`/seeds`)
+## 4. Macros & Jinja (`/macros`)
+
+Macros are reusable SQL/Jinja functions.
+
+*   **`btc_utils.sql`**
+    *   **`convert_to_usd(column_name)`:**
+        *   **Function:** Accepts a column name (BTC value) as an argument.
+        *   **Logic:** Joins with the `btc_usd_max` seed table on the current date to calculate the USD equivalent.
+        *   **Jinja Usage:** `{{ convert_to_usd('w.total_sent') }}` injects the calculation logic directly into the compiled SQL.
+
+---
+
+## 5. Seeds (`/seeds`)
 
 Seeds are CSV files that dbt loads into your data warehouse as tables.
 
@@ -61,29 +94,36 @@ Seeds are CSV files that dbt loads into your data warehouse as tables.
 
 ---
 
-## 4. Macros (`/macros`)
+## 6. Testing & Auditing
 
-Macros are reusable chunks of logic (like functions) written in Jinja and SQL.
-
-*   **`btc_utils.sql`**
-    *   **`convert_to_usd(column_name)`:** This macro takes a BTC value column and multiplies it by the latest price found in the `btc_usd_max` seed table for the current date.
-
----
-
-## 5. Documentation & Metadata (`/models/schema.yml`)
-
-This file defines the "contract" for the models, including testing and external exposures.
-
-*   **Tests:**
-    *   `HASH_KEY` in `stg_btc` is tested for `unique` and `not_null`.
-    *   `stg_btc_outputs` includes a row count comparison against a Python-based model.
-    *   `output_address` in `whale_alerts` uses a custom data test `assert_valid_btc_address`.
-*   **Exposures:**
-    *   **`btc_whale_alerts_exposure`:** Documents that the `whale_alerts` (v2) model is used in a Looker Studio dashboard for Bitcoin whale monitoring.
+### Audit Schema
+*   **What is it?** When dbt runs tests, it generates SQL queries that look for failing records.
+*   **`dbt_test__audit`:** If you configure `store_failures: true`, dbt saves the failing records to a dedicated schema (e.g., `PROD_dbt_test__audit`). This allows you to inspect exactly *which* rows failed a test (e.g., seeing the specific duplicate `HASH_KEY`s).
 
 ---
 
-## 6. Project State (`/state`)
+## 7. CI/CD & Production Operations
+
+### GitHub Actions (`dbt-ci.yml`)
+*   **Purpose:** Automates code validation on Pull Requests.
+*   **Workflow:**
+    1.  **Trigger:** Runs on every push to a PR.
+    2.  **Slim CI:** Often uses `dbt run --select state:modified+` to only run models that have changed, saving time and cost.
+    3.  **Validation:** Executes `dbt test` to ensure changes don't violate data integrity rules before merging to `main`.
+
+### Production Deployment
+*   **Deployment:** When code merges to `main`, a production job runs `dbt build` against the production database/schema.
+*   **Scheduling:** Jobs are typically scheduled (e.g., via dbt Cloud, Airflow, or Cron) to run at set intervals (e.g., every hour) to keep data fresh.
+
+### Monitoring & Alerting
+*   **Monitoring:** Use the dbt Cloud dashboard or Airflow UI to visualize job success/failure and duration.
+*   **Alerting:**
+    *   **Job Failure:** Configure email or Slack notifications if the `dbt run` command exits with a non-zero status.
+    *   **Source Freshness:** Run `dbt source freshness` periodically. If raw data is stale (e.g., no new blocks in 2 hours), dbt can trigger an alert.
+
+---
+
+## 8. Project State (`/state`)
 
 *   **`manifest.json`**
     *   A machine-generated file containing the full representation of the project's resources and their dependencies. It is used by dbt to understand the project structure and for state-based execution (e.g., `dbt build --state ...`).
