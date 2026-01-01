@@ -1,4 +1,4 @@
-# BTC dbt Project Documentation (Full & Enhanced)
+# BTC - Bitcoin - dbt Project Documentation 
 
 This project is designed to process Bitcoin transaction data within a Snowflake environment using dbt. It handles data ingestion from raw sources, flattens complex nested structures, and produces analytical models to identify "Whale" activities.
 
