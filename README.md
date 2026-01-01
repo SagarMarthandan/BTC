@@ -4,7 +4,83 @@ This project is designed to process Bitcoin transaction data within a Snowflake 
 
 ---
 
-## 1. Project Configuration & Security
+## ✨ Tech Stack
+
+<p align="center">
+  <img src="https://img.shields.io/badge/dbt-FF694B?style=for-the-badge&logo=dbt&logoColor=white" alt="dbt" />
+  <img src="https://img.shields.io/badge/Snowflake-2C9CCA?style=for-the-badge&logo=Snowflake&logoColor=white" alt="Snowflake" />
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/SQL-025E8C?style=for-the-badge&logo=postgresql&logoColor=white" alt="SQL" />
+  <img src="https://img.shields.io/badge/YAML-CB171E?style=for-the-badge&logo=yaml&logoColor=white" alt="YAML" />
+  <img src="https://img.shields.io/badge/GIT-E44C30?style=for-the-badge&logo=git&logoColor=white" alt="Git" />
+  <img src="https://img.shields.io/badge/Looker-4285F4?style=for-the-badge&logo=Looker&logoColor=white" alt="Looker Studio" />
+</p>
+
+---
+
+## 🗺️ Project Lineage
+
+This graph illustrates the flow of data from raw sources to the final analytical models and exposures.
+
+```mermaid
+graph TD
+    subgraph "Raw Data"
+        A[source: btc.btc]
+        F[seed: btc_usd_max.csv]
+    end
+
+    subgraph "Staging Layer"
+        B(stg_btc)
+        C(stg_btc_outputs)
+        D{{stg_btc_transactions}}
+    end
+
+    subgraph "Marts Layer"
+        E(whale_alerts)
+    end
+
+    subgraph "Macros"
+        G((convert_to_usd))
+    end
+
+    subgraph "Downstream"
+        H{{Looker Studio Dashboard}}
+    end
+
+    subgraph "Data Quality"
+        T1[not_null & unique tests]
+        T2[equal_rowcount test]
+        T3[custom data test]
+    end
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    F --> G
+    G --> E
+    E --> H
+
+    B --> T1
+    C --> T2
+    E --> T3
+
+    style A fill:#e6f3ff,stroke:#333,stroke-width:2px
+    style F fill:#fff2e6,stroke:#333,stroke-width:2px
+    style B fill:#e6ffed,stroke:#333,stroke-width:2px
+    style C fill:#e6ffed,stroke:#333,stroke-width:2px
+    style D fill:#e6ffed,stroke:#333,stroke-width:2px
+    style E fill:#e6ffed,stroke:#333,stroke-width:2px
+    style G fill:#f2e6ff,stroke:#333,stroke-width:2px
+    style H fill:#ffe6e6,stroke:#333,stroke-width:2px
+    style T1 fill:#fff8e6,stroke:#333,stroke-width:2px
+    style T2 fill:#fff8e6,stroke:#333,stroke-width:2px
+    style T3 fill:#fff8e6,stroke:#333,stroke-width:2px
+```
+
+---
+
+## ⚙️ 1. Project Configuration & Security
 
 ### `dbt_project.yml`
 The core configuration file for the dbt project.
@@ -14,13 +90,13 @@ The core configuration file for the dbt project.
 *   **Marts Configuration:** Specifically configures models in the `marts` folder to materialize as tables and includes post-hooks for table commenting and versioned view creation.
 
 ### Access Keys & `profiles.yml`
-*   **Why separate keys?** Git is a version control system for code, not a secret manager. Committing database passwords or private keys to Git is a major security risk.
+*   **Why separate keys?** 🔐 Git is a version control system for code, not a secret manager. Committing database passwords or private keys to Git is a major security risk.
 *   **How it works:** dbt uses a file called `profiles.yml` (typically stored in your local `~/.dbt/` directory, outside the project folder) to manage connection details (account, user, password, warehouse).
 *   **Local vs. Git:** The `dbt_project.yml` references a profile name (e.g., `BTC`). When you run dbt locally, it looks up `BTC` in your local `profiles.yml`. In production (like GitHub Actions), secrets are injected via environment variables into a generated `profiles.yml`.
 
 ---
 
-## 2. Data Sources & Schema Definition
+## 📚 2. Data Sources & Schema Definition
 
 ### `models/sources.yml`
 *   **Purpose:** Defines the raw data loaded into Snowflake (e.g., `btc.btc_schema.btc`).
@@ -36,7 +112,7 @@ The core configuration file for the dbt project.
 
 ---
 
-## 3. Models (`/models`)
+## 🏗️ 3. Models (`/models`)
 
 The models are organized into layers following dbt best practices: Staging and Marts.
 
@@ -72,7 +148,7 @@ The analytical layer where business logic is applied.
 
 ---
 
-## 4. Macros & Jinja (`/macros`)
+## 🔧 4. Macros & Jinja (`/macros`)
 
 Macros are reusable SQL/Jinja functions.
 
@@ -84,7 +160,7 @@ Macros are reusable SQL/Jinja functions.
 
 ---
 
-## 5. Seeds (`/seeds`)
+## 🌱 5. Seeds (`/seeds`)
 
 Seeds are CSV files that dbt loads into your data warehouse as tables.
 
@@ -94,7 +170,7 @@ Seeds are CSV files that dbt loads into your data warehouse as tables.
 
 ---
 
-## 6. Testing & Auditing
+## 🧪 6. Testing & Auditing
 
 ### Audit Schema
 *   **What is it?** When dbt runs tests, it generates SQL queries that look for failing records.
@@ -102,7 +178,7 @@ Seeds are CSV files that dbt loads into your data warehouse as tables.
 
 ---
 
-## 7. CI/CD & Production Operations
+## 🚀 7. CI/CD & Production Operations
 
 ### GitHub Actions (`dbt-ci.yml`)
 *   **Purpose:** Automates code validation on Pull Requests.
@@ -123,7 +199,7 @@ Seeds are CSV files that dbt loads into your data warehouse as tables.
 
 ---
 
-## 8. Project State (`/state`)
+## 🗂️ 8. Project State (`/state`)
 
 *   **`manifest.json`**
     *   A machine-generated file containing the full representation of the project's resources and their dependencies. It is used by dbt to understand the project structure and for state-based execution (e.g., `dbt build --state ...`).
