@@ -77,6 +77,44 @@ graph TD
     style T2 fill:#fff8e6,stroke:#333,stroke-width:2px
     style T3 fill:#fff8e6,stroke:#333,stroke-width:2px
 ```
+---
+
+**Airflow Integration**
+
+- **Prereqs:** dbt CLI installed on the Airflow worker environment (or use Docker), Airflow 2.x running with Scheduler & Webserver.
+- **DAG file:** place the DAG at [airflow/dags/dbt_daily_dag.py](airflow/dags/dbt_daily_dag.py) in this repository (already included).
+- **Airflow Variables:**
+    - **DBT_PROJECT_DIR:** absolute path to this dbt project (e.g., D:/Udemy Snowflake & DBT/BTC/BTC).
+    - **DBT_PROFILES_DIR:** path to `profiles.yml` if not the project root (optional).
+- **Connections:** Configure your datawarehouse connection in Airflow (e.g., `snowflake_default` or `prod_db`) via the Web UI or CLI. Do NOT store secrets in the repo—use Airflow Connections or a secret backend.
+- **What the DAG does:** runs `dbt deps`, `dbt run`, then `dbt test` daily (see DAG `dbt_daily_run`).
+
+**Quick deploy & test**
+
+1. Copy `airflow/dags/dbt_daily_dag.py` into your Airflow `dags/` folder (or mount this repo into Airflow).
+2. Set Airflow Variables (UI: Admin → Variables) for `DBT_PROJECT_DIR` and `DBT_PROFILES_DIR`.
+3. Ensure the Airflow worker's environment has `dbt` and required adapters installed, or run dbt in Docker (see notes below).
+
+Run these commands on the machine hosting Airflow (example):
+
+```bash
+# restart airflow services
+airflow scheduler &
+airflow webserver &
+
+# list dags and trigger
+airflow dags list
+airflow dags trigger dbt_daily_run
+
+# view task logs for a run
+airflow tasks logs dbt_daily_run dbt_run --execution-date <EXECUTION_DATE>
+```
+
+**Optional - DockerOperator approach (if dbt not installed on workers):**
+- Use `DockerOperator` to run `dbt` inside a dbt-enabled image that mounts the project and credentials as secrets. This isolates dependencies and is recommended for production.
+
+If you want, I can also add a DockerOperator example DAG or a sample `docker-compose` for running Airflow + dbt locally.
+
 
 ---
 
